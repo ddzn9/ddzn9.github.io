@@ -1,0 +1,13 @@
+const C=require("./core.js"),a=require("assert");let n=0;const t=(k,f)=>{f();n++;console.log("ok -",k)};
+t("minutos inteiros e formatação",()=>{a.strictEqual(C.toMin(2,30),150);a.strictEqual(C.hm(150),"2h30");a.strictEqual(C.hm(0),"0h00");a.strictEqual(C.hm(59),"0h59");a.strictEqual(C.toMin("",""),0)});
+t("soma sem perda de minutos",()=>{const r=Array.from({length:1000},(_,i)=>({id:i,date:"2027-01-05",disc:"LT",min:7}));a.strictEqual(C.sum(r),7000);a.strictEqual(C.hm(C.sum(r)),"116h40")});
+t("data local (sem fuso)",()=>{a.strictEqual(C.iso(new Date(2027,0,1,23,59)),"2027-01-01");a.strictEqual(C.add("2027-02-28",1),"2027-03-01");a.strictEqual(C.wk("2027-01-20"),"2027-01-18")});
+const R=[{id:1,date:"2027-01-10",disc:"LT",min:90},{id:2,date:"2027-01-20",disc:"LP",min:45},{id:3,date:"2027-02-01",disc:"LT",min:30},{id:4,date:"2027-01-31",disc:"LT",min:15}];
+t("períodos",()=>{const f=(k,o)=>{const[x,y]=C.rng(k,"2027-01-20",o);return C.sum(C.sel(R,x,y))};a.strictEqual(f("today"),45);a.strictEqual(f("week"),45);a.strictEqual(f("7d"),45);a.strictEqual(f("30d"),135);a.strictEqual(f("month"),150);a.strictEqual(f("ym",{ym:"2027-02"}),30);a.strictEqual(f("all"),180);a.strictEqual(f("c",{from:"2027-01-11",to:"2027-01-31"}),60)});
+t("por disciplina e filtro",()=>{a.deepStrictEqual(C.by(R),{LT:135,LP:45});a.strictEqual(C.sum(C.sel(R,null,null,"LT")),135)});
+t("meses e semanas",()=>{a.deepStrictEqual(C.months(R)["2027-01"],{LT:105,LP:45});const w=C.weeks(R,"2027-01-20",3);a.strictEqual(w.length,3);a.strictEqual(w[2][0],"2027-01-18")});
+t("importação sem duplicar",()=>{const m=C.merge(R,[{id:1,date:"2027-01-10",disc:"LT",min:90},{id:9,date:"2027-01-20",disc:"LP",min:45},{id:10,date:"2027-03-01",disc:"DH",min:20}]);a.strictEqual(m.add.length,1);a.strictEqual(m.dup,2)});
+t("CSV com aspas e ponto e vírgula",()=>{const s=C.csv([{date:"2027-01-01",disc:"LT",topic:'a "b"; c',min:75,type:"Teoria",notes:""}]);a.ok(s.includes('"a ""b""; c"'));a.ok(s.includes('"1h15"'))});
+t("rodízio proporcional (100 posições)",()=>{const s=C.seq(),c={};s.forEach(x=>c[x]=(c[x]||0)+1);C.D.forEach(d=>a.strictEqual(c[d[0]],d[2]));let run=1,mx=1;for(let i=1;i<100;i++){run=s[i]===s[i-1]?run+1:1;mx=Math.max(mx,run)}a.ok(mx<=2,"seguidas:"+mx)});
+t("fases",()=>{a.strictEqual(C.phase("2026-11-11")[0],1);a.strictEqual(C.phase("2026-11-30")[0],1);a.strictEqual(C.phase("2026-12-01")[0],2);a.strictEqual(C.phase("2027-12-31")[0],5);a.strictEqual(C.phase("2028-01-01"),null);a.strictEqual(C.D.reduce((s,d)=>s+d[2],0),100)});
+console.log(n+" testes passaram");
